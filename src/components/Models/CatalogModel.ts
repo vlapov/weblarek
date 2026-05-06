@@ -16,7 +16,7 @@ export class CatalogModel {
         return this.items.find(item => item.id === id);
     }
 
-    setPreview(product: IProduct | null): void {
+    setPreview(product: IProduct): void {
         this.preview = product;
     }
 

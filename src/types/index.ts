@@ -23,13 +23,15 @@ export interface IBuyer {
     address: string;
 }
 
+export type IBuyerValidationErrors = Partial<Record<keyof IBuyer, string>>;
+
 export interface IProductListResponse {
     total: number;
     items: IProduct[];
 }
 
 export interface IOrderRequest extends IBuyer {
-    items: Array<IProduct['id']>;
+    items: string[];
     total: number;
 }
 

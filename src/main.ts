@@ -22,8 +22,6 @@ console.log('Catalog: товар с id ->', firstId, '->', firstCatalogProduct);
 const firstPreviewProduct = apiProducts.items[0];
 catalogModel.setPreview(firstPreviewProduct);
 console.log('Catalog: preview после setPreview(product) ->', catalogModel.getPreview());
-catalogModel.setPreview(null);
-console.log('Catalog: preview после setPreview(null) ->', catalogModel.getPreview());
 
 const cartModel = new CartModel();
 
@@ -56,8 +54,8 @@ console.log('Cart: total  ->', cartModel.getTotal());
 // После очистки и количество, и сумма должны стать нулевыми.
 cartModel.clear();
 
-console.log('Cart: count  ->', cartModel.getCount());
-console.log('Cart: total  ->', cartModel.getTotal());
+console.log('Cart after clear: count ->', cartModel.getCount());
+console.log('Cart after clear: total ->', cartModel.getTotal());
 
 const buyerModel = new BuyerModel();
 
@@ -77,7 +75,7 @@ console.log('Buyer: after setData({ email, phone }) ->', buyerModel.getData());
 console.log('Buyer: validate after email+phone ->', buyerModel.validate());
 
 buyerModel.setData({ payment: 'online' });
-console.log('Buyer: after setData({ payment: "card" }) ->', buyerModel.getData());
+console.log('Buyer: after setData({ payment: "online" }) ->', buyerModel.getData());
 console.log('Buyer: validate after full data ->', buyerModel.validate());
 
 buyerModel.clear();
