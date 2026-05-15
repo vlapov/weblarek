@@ -43,3 +43,43 @@ export interface IOrderResponse {
 export interface IApiErrorResponse {
     error: string;
 }
+
+/** Данные для отображения карточки товара (строки для UI готовит презентер). */
+export type ICardDisplay = Pick<IProduct, 'id' | 'title' | 'category'> & {
+    image: string;
+    price: string;
+};
+
+export type TCardPreviewAction = 'buy' | 'remove' | 'none';
+
+/** Данные модалки с подробной карточкой товара. */
+export type ICardPreviewDisplay = ICardDisplay &
+    Pick<IProduct, 'description'> & {
+        buttonText: string;
+        buttonDisabled: boolean;
+        buttonAction: TCardPreviewAction;
+    };
+
+/** Данные строки товара в корзине. */
+export type ICardBasketDisplay = Pick<ICardDisplay, 'id' | 'title' | 'price'> & {
+    index: number;
+};
+
+/** Общие поля форм для отображения валидации. */
+export type IFormDisplay = {
+    errors: string;
+    valid: boolean;
+};
+
+/** Данные формы первого шага оформления. */
+export type IOrderFormDisplay = IFormDisplay &
+    Pick<IBuyer, 'payment' | 'address'>;
+
+/** Данные формы второго шага оформления. */
+export type IContactsFormDisplay = IFormDisplay &
+    Pick<IBuyer, 'email' | 'phone'>;
+
+/** Данные экрана успешного оформления заказа. */
+export type IOrderSuccessDisplay = {
+    total: string;
+};

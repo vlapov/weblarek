@@ -1,4 +1,5 @@
 import { IBuyer, IBuyerValidationErrors } from '../../types';
+import { IEvents } from '../base/Events';
 
 export class BuyerModel {
     protected buyer: IBuyer = {
@@ -6,13 +7,16 @@ export class BuyerModel {
         email: '',
         phone: '',
         address: '',
-    }
+    };
+
+    constructor(protected events: IEvents) {}
 
     setData(data: Partial<IBuyer>): void {
         this.buyer = {
             ...this.buyer,
             ...data,
-        }
+        };
+        this.events.emit('buyer:changed', { buyer: this.buyer });
     }
 
     getData(): IBuyer {
@@ -25,7 +29,8 @@ export class BuyerModel {
             email: '',
             phone: '',
             address: '',
-        }
+        };
+        this.events.emit('buyer:changed', { buyer: this.buyer });
     }
 
     validate(): IBuyerValidationErrors {
@@ -42,7 +47,7 @@ export class BuyerModel {
         if (!this.buyer.phone) {
             errors.phone = 'Укажите телефон';
         }
-        
+
         if (!this.buyer.address) {
             errors.address = 'Укажите адрес';
         }
