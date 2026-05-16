@@ -16,7 +16,7 @@ export class BuyerModel {
             ...this.buyer,
             ...data,
         };
-        this.events.emit('buyer:changed', { buyer: this.buyer });
+        this.events.emit('buyer:changed');
     }
 
     getData(): IBuyer {
@@ -30,7 +30,7 @@ export class BuyerModel {
             phone: '',
             address: '',
         };
-        this.events.emit('buyer:changed', { buyer: this.buyer });
+        this.events.emit('buyer:changed');
     }
 
     validate(): IBuyerValidationErrors {

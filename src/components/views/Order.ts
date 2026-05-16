@@ -29,9 +29,7 @@ export class Order extends Form<IOrderFormDisplay> {
 
         this.container.addEventListener('submit', (event) => {
             event.preventDefault();
-            if (!this.submitButton.disabled) {
-                this.events.emit('order:submit');
-            }
+            this.events.emit('order:submit');
         });
     }
 

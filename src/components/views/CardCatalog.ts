@@ -1,25 +1,30 @@
 import { categoryMap } from '../../utils/constants';
-import { ICardDisplay } from '../../types';
+import { ICardCatalog } from '../../types';
 import { ensureElement } from '../../utils/utils';
 import { IEvents } from '../base/Events';
 import { Card } from './Card';
 
-export class CardCatalog<T extends ICardDisplay = ICardDisplay> extends Card<T> {
+export class CardCatalog<T extends ICardCatalog = ICardCatalog> extends Card<T> {
     protected categoryElement: HTMLElement;
     protected imageElement: HTMLImageElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
+    constructor(
+        container: HTMLElement,
+        protected events: IEvents,
+        protected productId: string
+    ) {
         super(container);
 
         this.categoryElement = ensureElement<HTMLElement>('.card__category', container);
         this.imageElement = ensureElement<HTMLImageElement>('.card__image', container);
 
         this.container.addEventListener('click', () => {
-            const id = this.container.dataset.id;
-            if (id) {
-                this.events.emit('card:select', { id });
-            }
+            this.events.emit('card:select', { id: this.productId });
         });
+    }
+
+    setProductId(id: string): void {
+        this.productId = id;
     }
 
     set category(value: string) {
@@ -35,8 +40,7 @@ export class CardCatalog<T extends ICardDisplay = ICardDisplay> extends Card<T> 
         }
     }
 
-    set image(value: string) {
-        const alt = this.titleElement.textContent ?? '';
-        this.setImage(this.imageElement, value, alt);
+    set image(value: { src: string; alt: string }) {
+        this.setImage(this.imageElement, value.src, value.alt);
     }
 }

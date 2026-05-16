@@ -53,6 +53,21 @@ const successTemplate = ensureElement<HTMLTemplateElement>('#success');
 const order = new Order(events, cloneTemplate<HTMLFormElement>(orderTemplate));
 const contacts = new Contacts(events, cloneTemplate<HTMLFormElement>(contactsTemplate));
 const orderSuccess = new OrderSuccess(events, cloneTemplate<HTMLElement>(successTemplate));
+const cardPreview = new CardPreview(
+  cloneTemplate<HTMLElement>(cardPreviewTemplate),
+  events,
+  ''
+);
+const basket = new Basket(events, cloneTemplate<HTMLElement>(basketTemplate));
+
+type TModalView = 'basket' | 'preview' | 'order' | 'contacts' | 'success';
+
+let modalView: TModalView | null = null;
+
+const closeModal = () => {
+  modal.close();
+  modalView = null;
+};
 
 // --- Презентер: подготовка данных для View ---
 const getOrderFormState = () => {
@@ -79,13 +94,12 @@ const getContactsFormState = (apiError?: string) => {
 
 const renderCatalog = () => {
   const catalogCards = catalogModel.getItems().map((item) => {
-    const card = new CardCatalog(cloneTemplate<HTMLButtonElement>(cardCatalogTemplate), events);
+    const card = new CardCatalog(cloneTemplate<HTMLButtonElement>(cardCatalogTemplate), events, item.id);
 
     return card.render({
-      id: item.id,
       title: item.title,
       category: item.category,
-      image: `${CDN_URL}${item.image}`,
+      image: { src: `${CDN_URL}${item.image}`, alt: item.title },
       price: formatPrice(item.price),
     });
   });
@@ -117,55 +131,58 @@ const openPreview = () => {
   const product = catalogModel.getPreview();
   if (!product) return;
 
-  const preview = new CardPreview(cloneTemplate<HTMLElement>(cardPreviewTemplate), events);
+  cardPreview.setProductId(product.id);
   const buttonState = getPreviewButtonState(product);
 
+  modalView = 'preview';
   modal.open(
-    preview.render({
-      id: product.id,
+    cardPreview.render({
       title: product.title,
       category: product.category,
       description: product.description,
-      image: `${CDN_URL}${product.image}`,
+      image: { src: `${CDN_URL}${product.image}`, alt: product.title },
       price: formatPrice(product.price),
       ...buttonState,
     })
   );
 };
 
-const openBasket = () => {
+const renderBasket = () => {
   const items = cartModel.getItems();
   const basketItems = items.map((product, index) => {
-    const card = new CardBasket(cloneTemplate<HTMLLIElement>(cardBasketTemplate), events);
+    const card = new CardBasket(cloneTemplate<HTMLLIElement>(cardBasketTemplate), events, product.id);
 
     return card.render({
-      id: product.id,
       title: product.title,
       price: formatPrice(product.price),
       index: index + 1,
     });
   });
 
-  const basket = new Basket(events, cloneTemplate<HTMLElement>(basketTemplate));
+  basket.render({
+    items: basketItems,
+    total: formatTotal(cartModel.getTotal()),
+    orderEnabled: items.length > 0,
+  });
+};
 
-  modal.open(
-    basket.render({
-      items: basketItems,
-      total: formatTotal(cartModel.getTotal()),
-      orderEnabled: items.length > 0,
-    })
-  );
+const openBasket = () => {
+  modalView = 'basket';
+  modal.open(basket.render());
 };
 
 const openOrder = () => {
+  modalView = 'order';
   modal.open(order.render(getOrderFormState()));
 };
 
 const openContacts = () => {
+  modalView = 'contacts';
   modal.open(contacts.render(getContactsFormState()));
 };
 
 const openOrderSuccess = (total: number) => {
+  modalView = 'success';
   modal.open(
     orderSuccess.render({
       total: `Списано ${total} синапсов`,
@@ -174,13 +191,13 @@ const openOrderSuccess = (total: number) => {
 };
 
 const updateOpenOrderForm = () => {
-  if (modal.isOpen() && modal.hasContent('form[name="order"]')) {
+  if (modalView === 'order') {
     order.render(getOrderFormState());
   }
 };
 
 const updateOpenContactsForm = () => {
-  if (modal.isOpen() && modal.hasContent('form[name="contacts"]')) {
+  if (modalView === 'contacts') {
     contacts.render(getContactsFormState());
   }
 };
@@ -205,14 +222,7 @@ events.on('preview:changed', () => {
 
 events.on('cart:changed', () => {
   renderHeader();
-
-  if (modal.isOpen() && modal.hasContent('.basket')) {
-    openBasket();
-  }
-
-  if (modal.isOpen() && modal.hasContent('.card_full')) {
-    openPreview();
-  }
+  renderBasket();
 });
 
 events.on('buyer:changed', () => {
@@ -233,13 +243,17 @@ events.on('card:buy', (data: { id: string }) => {
   if (product && !cartModel.hasProduct(data.id)) {
     cartModel.add(product);
   }
-  modal.close();
+  closeModal();
 });
 
 events.on('card:remove', (data: { id: string }) => {
   const product = catalogModel.getProduct(data.id);
   if (product) {
     cartModel.remove(product);
+  }
+
+  if (modalView === 'preview') {
+    closeModal();
   }
 });
 
@@ -260,11 +274,6 @@ events.on('order:address', (data: { address: string }) => {
 });
 
 events.on('order:submit', () => {
-  const state = getOrderFormState();
-  if (!state.valid) {
-    order.render(state);
-    return;
-  }
   openContacts();
 });
 
@@ -273,12 +282,6 @@ events.on('contacts:change', (data: { email?: string; phone?: string }) => {
 });
 
 events.on('contacts:submit', () => {
-  const state = getContactsFormState();
-  if (!state.valid) {
-    contacts.render(state);
-    return;
-  }
-
   const buyer = buyerModel.getData();
 
   webLarekApi.createOrder({
@@ -293,16 +296,19 @@ events.on('contacts:submit', () => {
     })
     .catch((err: unknown) => {
       const message = typeof err === 'string' ? err : 'Не удалось оформить заказ';
-      contacts.render(getContactsFormState(message));
+      if (modalView === 'contacts') {
+        contacts.render(getContactsFormState(message));
+      }
     });
 });
 
 events.on('order:success-close', () => {
-  modal.close();
+  closeModal();
 });
 
 events.on('modal:close', () => {
-  modal.close();
+  closeModal();
 });
 
 renderHeader();
+renderBasket();

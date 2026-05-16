@@ -9,7 +9,7 @@ export class CatalogModel {
 
     setItems(items: IProduct[]): void {
         this.items = items;
-        this.events.emit('items:changed', { items });
+        this.events.emit('items:changed');
     }
 
     getItems(): IProduct[] {
@@ -22,7 +22,7 @@ export class CatalogModel {
 
     setPreview(product: IProduct): void {
         this.preview = product;
-        this.events.emit('preview:changed', { product });
+        this.events.emit('preview:changed');
     }
 
     getPreview(): IProduct | null {

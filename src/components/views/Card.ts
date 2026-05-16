@@ -1,7 +1,12 @@
 import { ensureElement } from '../../utils/utils';
 import { Component } from '../base/Component';
 
-export abstract class Card<T extends object> extends Component<T> {
+export interface ICard {
+    title: string;
+    price: string;
+}
+
+export abstract class Card<T extends object = object> extends Component<ICard & T> {
     protected titleElement: HTMLElement;
     protected priceElement: HTMLElement;
 
@@ -10,10 +15,6 @@ export abstract class Card<T extends object> extends Component<T> {
 
         this.titleElement = ensureElement<HTMLElement>('.card__title', container);
         this.priceElement = ensureElement<HTMLElement>('.card__price', container);
-    }
-
-    set id(value: string) {
-        this.container.dataset.id = value;
     }
 
     set title(value: string) {

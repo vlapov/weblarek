@@ -2,7 +2,11 @@ import { ensureElement } from '../../utils/utils';
 import { Component } from '../base/Component';
 import { IEvents } from '../base/Events';
 
-export class Modal extends Component<object> {
+export interface IModal {
+    content: HTMLElement;
+}
+
+export class Modal extends Component<IModal> {
     protected contentElement: HTMLElement;
     protected closeButton: HTMLButtonElement;
 
@@ -23,21 +27,17 @@ export class Modal extends Component<object> {
         });
     }
 
+    set content(value: HTMLElement) {
+        this.contentElement.replaceChildren(value);
+    }
+
     open(node: HTMLElement): void {
-        this.contentElement.replaceChildren(node);
+        this.render({ content: node });
         this.container.classList.add('modal_active');
     }
 
     close(): void {
         this.container.classList.remove('modal_active');
         this.contentElement.replaceChildren();
-    }
-
-    isOpen(): boolean {
-        return this.container.classList.contains('modal_active');
-    }
-
-    hasContent(selector: string): boolean {
-        return !!this.contentElement.querySelector(selector);
     }
 }

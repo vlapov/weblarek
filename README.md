@@ -158,10 +158,12 @@ interface IBuyer {
 
 Презентер готовит объекты для `render()` — отдельные от моделей и API:
 
-- `ICardDisplay` — карточка каталога (`id`, `title`, `category`, `image`, `price` как строка);
+- `ICard` — базовые поля карточки (`title`, `price` как строка); используется в `Card<T>`;
+- `ICardDisplay` — карточка каталога (`ICard` + `category`, `image`); `productId` передаётся в **конструктор** View, не в `render()`;
+- `ICardCatalog`, `ICardBasket`, `ICardPreview` — дополнительные поля для дочерних классов `Card`;
 - `ICardPreviewDisplay` — превью товара (+ `description`, `buttonText`, `buttonDisabled`, `buttonAction`);
 - `TCardPreviewAction` — `'buy' | 'remove' | 'none'`;
-- `ICardBasketDisplay` — строка корзины (`id`, `title`, `price`, `index`);
+- `ICardBasketDisplay` — строка корзины (`title`, `price`, `index`); `productId` — в конструкторе `CardBasket`;
 - `IFormDisplay`, `IOrderFormDisplay`, `IContactsFormDisplay` — формы оформления;
 - `IOrderSuccessDisplay` — экран успеха (`total` как строка «Списано … синапсов»).
 
@@ -185,10 +187,10 @@ interface IBuyer {
 
 **Методы класса:**
 
-- `setItems(items: IProduct[]): void` — сохраняет в модели массив товаров, переданный в параметре `items` (заменяет предыдущий каталог); генерирует событие `items:changed` с данными `{ items }`.
+- `setItems(items: IProduct[]): void` — сохраняет в модели массив товаров, переданный в параметре `items` (заменяет предыдущий каталог); генерирует событие `items:changed` (без payload; данные — через `getItems()`).
 - `getItems(): IProduct[]` — возвращает копию или ссылку на массив всех товаров каталога; тип возвращаемого значения: `IProduct[]`.
 - `getProduct(id: string): IProduct | undefined` — возвращает товар с идентификатором `id`, если он есть в каталоге; иначе `undefined`. Параметр: `id: string`. Возвращаемый тип: `IProduct | undefined`.
-- `setPreview(product: IProduct): void` — сохраняет товар для подробного отображения; генерирует событие `preview:changed` с данными `{ product }`.
+- `setPreview(product: IProduct): void` — сохраняет товар для подробного отображения; генерирует событие `preview:changed` (данные — через `getPreview()`).
 - `getPreview(): IProduct | null` — возвращает товар для подробного отображения или `null`; тип: `IProduct | null`.
 
 ### Класс `CartModel`
@@ -205,7 +207,7 @@ interface IBuyer {
 **Методы класса:**
 
 - `getItems(): IProduct[]` — возвращает товары в корзине; тип: `IProduct[]`.
-- `add(product: IProduct): void` — добавляет в корзину товар из параметра `product: IProduct`; генерирует событие `cart:changed` с данными `{ items }`.
+- `add(product: IProduct): void` — добавляет в корзину товар из параметра `product: IProduct`; генерирует событие `cart:changed` (данные — через `getItems()` и др.).
 - `remove(product: IProduct): void` — удаляет из корзины переданный товар; параметр: `product: IProduct`; генерирует `cart:changed`.
 - `clear(): void` — удаляет все товары из корзины; генерирует `cart:changed`.
 - `getTotal(): number` — возвращает сумму полей `price` всех товаров в корзине; тип возвращаемого значения: `number`.
@@ -225,7 +227,7 @@ interface IBuyer {
 
 **Методы класса:**
 
-- `setData(data: Partial<IBuyer>): void` — сохраняет в модели только те поля из объекта `data`, которые переданы (тип `Partial<IBuyer>`); остальные поля **не сбрасываются**; генерирует событие `buyer:changed` с данными `{ buyer }`.
+- `setData(data: Partial<IBuyer>): void` — сохраняет в модели только те поля из объекта `data`, которые переданы (тип `Partial<IBuyer>`); остальные поля **не сбрасываются**; генерирует событие `buyer:changed` (данные — через `getData()`).
 - `getData(): IBuyer` — возвращает полный список данных покупателя; тип: `IBuyer`.
 - `clear(): void` — сбрасывает все поля к начальному пустому состоянию; генерирует `buyer:changed`.
 - `validate(): IBuyerValidationErrors` — проверяет данные по функциональным требованиям: поле считается валидным, если оно **не пустое** (для `payment` — пустая строка `''` трактуется как «не выбрано» и невалидно). Метод возвращает объект ошибок валидации с ключами из полей `IBuyer`; для **невалидных** полей значение — **текст ошибки** (строка), для валидных полей свойство в объекте **отсутствует**. Тип объекта вынесен в именованный алиас `IBuyerValidationErrors`.
@@ -241,12 +243,14 @@ interface IBuyer {
 
 ### Сводка событий Model → Presenter
 
-| Событие | Источник | Когда генерируется | Данные |
-|---------|----------|-------------------|--------|
-| `items:changed` | `CatalogModel` | `setItems` | `{ items: IProduct[] }` |
-| `preview:changed` | `CatalogModel` | `setPreview` | `{ product: IProduct }` |
-| `cart:changed` | `CartModel` | `add`, `remove`, `clear` | `{ items: IProduct[] }` |
-| `buyer:changed` | `BuyerModel` | `setData`, `clear` | `{ buyer: IBuyer }` |
+| Событие | Источник | Когда генерируется | Как презентер получает данные |
+|---------|----------|-------------------|------------------------------|
+| `items:changed` | `CatalogModel` | `setItems` | `getItems()`, `getProduct(id)` |
+| `preview:changed` | `CatalogModel` | `setPreview` | `getPreview()` |
+| `cart:changed` | `CartModel` | `add`, `remove`, `clear` | `getItems()`, `getCount()`, `getTotal()`, `hasProduct(id)` |
+| `buyer:changed` | `BuyerModel` | `setData`, `clear` | `getData()`, `validate()` |
+
+События моделей **не передают payload** — только сигнализируют об изменении. Актуальные данные презентер читает методами модели.
 
 Методы чтения (`getItems`, `getProduct`, `getCount`, `validate` и т.д.) событий **не** генерируют.
 
@@ -264,14 +268,15 @@ interface IBuyer {
 **Правила:**
 
 - презентер **обрабатывает** события и **не генерирует** их (`events.emit` в `main.ts` не используется);
-- после вызова метода сохранения в модели **не** вызывается немедленный `render()` View — обновление интерфейса идёт по событию модели (`items:changed`, `cart:changed` и т.д.);
-- `render()` / `modal.open()` вызываются при обработке события модели или при **открытии** модального окна (корзина, превью, формы, успех);
-- при невалидной отправке формы (`order:submit`, `contacts:submit`) допускается перерисовка открытой формы для показа ошибок без изменения модели.
+- после вызова метода сохранения в модели **не** вызывается немедленный `render()` View — обновление интерфейса идёт по событию модели (`items:changed`, `cart:changed` и т.д.); данные для View берутся из модели через `getItems()`, `getData()` и т.п., а не из payload события;
+- `render()` вызывается при изменении данных модели (`renderBasket()` по `cart:changed`, формы по `buyer:changed` и т.д.); `modal.open()` — при показе модалки; `openBasket()` не перерисовывает корзину — только вставляет уже обновлённый узел `Basket`;
+- переменная `modalView` (`'basket' | 'preview' | 'order' | 'contacts' | 'success' | null`) хранит, какой экран сейчас в модалке; `closeModal()` вызывает `modal.close()` и сбрасывает `modalView` (состояние не читается из DOM);
+- кнопки «Далее» и «Оплатить» активны только при валидных данных (`valid` в форме); повторная валидация при `order:submit` / `contacts:submit` не выполняется; ошибка API при оплате показывается в форме контактов.
 
 **Инициализация в `main.ts`:**
 
 1. `EventEmitter`, модели (`CatalogModel`, `CartModel`, `BuyerModel`), `WebLarekApi`.
-2. Экземпляры View страницы (`Header`, `Gallery`, `Modal`, формы `Order` / `Contacts` / `OrderSuccess`).
+2. Экземпляры View (`Header`, `Gallery`, `Modal`, `CardPreview`, `Basket`, `Order`, `Contacts`, `OrderSuccess`).
 3. Запрос `webLarekApi.getProductList()` → `catalogModel.setItems()` (каталог рисуется по `items:changed`).
 4. Обработчики всех событий из таблиц ниже.
 
@@ -281,18 +286,19 @@ interface IBuyer {
 |----------------------|--------------|---------------------|---------------|
 | Загрузка страницы | — | `getProductList` → `setItems` | `items:changed` → галерея |
 | Клик по карточке каталога | `card:select` | `setPreview(product)` | `preview:changed` → модалка превью |
-| «Купить» | `card:buy` | `cartModel.add`, `modal.close` | `cart:changed` → счётчик |
-| «Удалить» / корзина | `card:remove` | `cartModel.remove` | `cart:changed` → счётчик, корзина/превью |
-| Иконка корзины | `basket:open` | `openBasket()` | модалка корзины |
+| «Купить» | `card:buy` | `cartModel.add`, `closeModal()` | `cart:changed` → счётчик, `renderBasket()` |
+| «Удалить» (превью) | `card:remove` | `cartModel.remove`, `closeModal` | `cart:changed` → `renderHeader()`, `renderBasket()` |
+| «Удалить» (корзина) | `card:remove` | `cartModel.remove` | `cart:changed` → `renderHeader()`, `renderBasket()` |
+| Иконка корзины | `basket:open` | `openBasket()` | показ модалки с уже отрендеренной корзиной |
 | «Оформить» | `basket:order` | `openOrder()` | модалка заказа |
 | Форма заказа | `order:payment`, `order:address` | `buyerModel.setData` | `buyer:changed` → форма |
-| «Далее» | `order:submit` | валидация → `openContacts()` или ошибки | модалка / форма |
+| «Далее» | `order:submit` | `openContacts()` | форма контактов |
 | Контакты | `contacts:change` | `buyerModel.setData` | `buyer:changed` → форма |
 | «Оплатить» | `contacts:submit` | `createOrder` → `clear` → успех | модалка успеха |
-| «За новыми покупками!» | `order:success-close` | `modal.close` | — |
-| Закрыть модалку (крестик / оверлей) | `modal:close` | `modal.close` | — |
+| «За новыми покупками!» | `order:success-close` | `closeModal()` | — |
+| Закрыть модалку (крестик / оверлей) | `modal:close` | `closeModal()` | — |
 
-**Дополнительно в презентере:** проверка `!cartModel.hasProduct(id)` перед `add`; при ошибке `createOrder` — текст ошибки сервера (класс `Api` отклоняет промис строкой из поля `error` ответа) показывается в форме `Contacts`; экземпляры `Order` / `Contacts` / `OrderSuccess` создаются один раз, корзина и превью — при каждом открытии модалки.
+**Дополнительно в презентере:** проверка `!cartModel.hasProduct(id)` перед `add`; при ошибке `createOrder` — текст ошибки сервера (класс `Api` отклоняет промис строкой из поля `error` ответа) показывается в форме `Contacts`; экземпляры `Order` / `Contacts` / `OrderSuccess` / `CardPreview` / `Basket` создаются один раз; `renderBasket()` — по `cart:changed` (список `CardBasket`, итог, кнопка); `openBasket()` — только `modal.open()` без перерисовки; при смене товара в превью — `setProductId()` и `render()`.
 
 ## Слой коммуникации
 
@@ -407,6 +413,8 @@ Component
 **Назначение:** единая модальная оболочка — показ/скрытие оверлея, закрытие, вставка произвольного контента.  
 **Разметка:** `#modal-container` (`.modal`, `.modal__close`, `.modal__content`).
 
+**Интерфейс `IModal`:** `{ content: HTMLElement }` — данные для сеттера контента.
+
 **Конструктор:**  
 `constructor(protected events: IEvents, container: HTMLElement)` — корневой элемент `#modal-container` или `.modal`.
 
@@ -415,12 +423,11 @@ Component
 - `protected contentElement: HTMLElement` — `.modal__content`, куда вставляется содержимое;
 - `protected closeButton: HTMLButtonElement` — кнопка `.modal__close`.
 
-**Методы:**
+**Методы и сеттеры:**
 
-- `open(node: HTMLElement): void` — вставляет переданный узел в `.modal__content`, добавляет класс `modal_active`;
+- `set content(value: HTMLElement): void` — вставляет узел в `.modal__content` (`replaceChildren`);
+- `open(node: HTMLElement): void` — `render({ content: node })`, добавляет класс `modal_active`;
 - `close(): void` — скрывает модалку, очищает `.modal__content`;
-- `isOpen(): boolean` — открыта ли модалка;
-- `hasContent(selector: string): boolean` — есть ли внутри `.modal__content` элемент по селектору (для обновления открытой корзины/формы);
 - `render(): HTMLElement` — возвращает корневой элемент модалки (без данных для отображения).
 
 **События (генерирует View):**
@@ -433,8 +440,12 @@ Component
 
 ### Класс `Card` (базовый)
 
-**Назначение:** общая логика карточки — идентификатор, заголовок, цена (поля, общие для всех шаблонов карточек).  
+**Назначение:** общая логика карточки — заголовок и цена (поля, общие для всех шаблонов карточек).  
 **Родитель для:** `CardCatalog`, `CardPreview`, `CardBasket`.
+
+**Интерфейс `ICard`:** `{ title: string; price: string }` — поля базовых сеттеров. Идентификатор товара **не** хранится в DOM (`data-id` не используется); презентер передаёт `productId` в конструктор карточки.
+
+**Дженерик:** `Card<T extends object = object> extends Component<ICard & T>` — дочерние классы передают только **дополнительные** поля; общие поля карточки наследуются через `ICard`.
 
 **Конструктор:**  
 `constructor(container: HTMLElement)` — корневой элемент клона соответствующего `<template>`.
@@ -446,7 +457,6 @@ Component
 
 **Методы и сеттеры:**
 
-- `set id(value: string): void` — `data-id` на корневом элементе (для событий `card:select`, `card:buy`, `card:remove`);
 - `set title(value: string): void` — заголовок товара;
 - `set price(value: string): void` — цена (строка из презентера: «750 синапсов», «Бесценно»).
 
@@ -460,7 +470,7 @@ Component
 **Разметка:** `<template id="card-catalog">` → `button.gallery__item.card`.
 
 **Конструктор:**  
-`constructor(container: HTMLElement, protected events: IEvents)` — брокер событий; клик по карточке генерирует `card:select` с `{ id }` из `data-id`.
+`constructor(container: HTMLElement, events: IEvents, productId: string)` — `productId` для события `card:select`; клик по карточке → `{ id: productId }`.
 
 **Поля класса (дополнительно):**
 
@@ -470,7 +480,8 @@ Component
 **Методы и сеттеры (дополнительно):**
 
 - `set category(value: string): void` — текст и модификатор класса по `categoryMap`;
-- `set image(value: string): void` — URL через `setImage()` из `Component`.
+- `set image(value: { src: string; alt: string }): void` — `src` и `alt` из презентера (не из разметки), через `setImage()` из `Component`;
+- `setProductId(id: string): void` — обновляет `productId` для событий (используется в `CardPreview` при смене товара).
 
 **События (генерирует View):**
 
@@ -484,7 +495,7 @@ Component
 **Разметка:** `<template id="card-preview">` → `.card.card_full`.
 
 **Конструктор:**  
-`constructor(container: HTMLElement, events: IEvents)` — наследует `CardCatalog`; кнопка эмитит `card:buy` или `card:remove` в зависимости от `buttonAction` в `render`.
+`constructor(container: HTMLElement, events: IEvents, productId: string)` — наследует `CardCatalog`; экземпляр в презентере один; перед `render()` вызывается `setProductId()` из `CardCatalog`. Кнопка эмитит `card:buy` или `card:remove` с актуальным `productId`.
 
 **Поля класса (дополнительно):**
 
@@ -511,7 +522,7 @@ Component
 **Разметка:** `<template id="card-basket">` → `li.basket__item`.
 
 **Конструктор:**  
-`constructor(container: HTMLElement, protected events: IEvents)` — кнопка удаления эмитит `card:remove` с `{ id }`.
+`constructor(container: HTMLElement, events: IEvents, productId: string)` — кнопка удаления эмитит `card:remove` с `{ id: productId }`.
 
 **Поля класса (дополнительно):**
 
@@ -571,7 +582,7 @@ Component
 
 - `order:payment` — клик «Онлайн» / «При получении»; payload: `{ payment: 'online' | 'offline' }` (кнопки в HTML: `card` / `cash`);
 - `order:address` — ввод в поле адреса; payload: `{ address: string }`;
-- `order:submit` — кнопка «Далее»; без payload (валидация через `BuyerModel` в презентере).
+- `order:submit` — кнопка «Далее»; без payload; презентер открывает форму контактов (ошибки и `valid` — по `buyer:changed`).
 
 ---
 
@@ -602,7 +613,7 @@ Component
 **Разметка:** `<template id="basket">`.
 
 **Конструктор:**  
-`constructor(protected events: IEvents, container: HTMLElement)`.
+`constructor(protected events: IEvents, container: HTMLElement)` — один экземпляр в презентере; `renderBasket()` по `cart:changed`, `openBasket()` только показывает модалку.
 
 **Поля класса:**
 
@@ -655,8 +666,8 @@ Component
 |---------|----------|---------------------------|
 | `basket:open` | `Header` | открыть модалку корзины |
 | `card:select` | `CardCatalog` | открыть превью товара |
-| `card:buy` | `CardPreview` | добавить товар в корзину |
-| `card:remove` | `CardPreview`, `CardBasket` | удалить товар из корзины |
+| `card:buy` | `CardPreview` | добавить в корзину, закрыть модалку |
+| `card:remove` | `CardPreview`, `CardBasket` | удалить из корзины; из превью — закрыть модалку |
 | `basket:order` | `Basket` | открыть форму оформления (шаг 1) |
 | `order:payment` | `Order` | сохранить способ оплаты |
 | `order:address` | `Order` | сохранить адрес |
@@ -666,4 +677,4 @@ Component
 | `modal:close` | `Modal` | закрыть модальное окно |
 | `order:success-close` | `OrderSuccess` | закрыть успех, сброс UI |
 
-После изменения данных в моделях презентер обновляет View (например, `header.render({ counter })`, `gallery.render({ catalog })`) и **не изменяет** классы моделей под нужды представления.
+После изменения данных в моделях презентер обновляет View (например, `renderHeader()`, `renderCatalog()`, `renderBasket()`) и **не изменяет** классы моделей под нужды представления.

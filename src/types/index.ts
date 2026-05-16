@@ -44,15 +44,24 @@ export interface IApiErrorResponse {
     error: string;
 }
 
-/** Данные для отображения карточки товара (строки для UI готовит презентер). */
-export type ICardDisplay = Pick<IProduct, 'id' | 'title' | 'category'> & {
-    image: string;
+/** Изображение карточки: URL и альтернативный текст (готовит презентер из модели). */
+export type ICardImage = {
+    src: string;
+    alt: string;
+};
+
+/** Данные для отображения карточки (строки для UI готовит презентер). Идентификатор — в конструкторе View (`productId`), не в `render()`. */
+export type ICardDisplay = Pick<IProduct, 'title' | 'category'> & {
+    image: ICardImage;
     price: string;
 };
 
+/** Дополнительные поля карточки каталога (к `ICard` из `Card`). */
+export type ICardCatalog = Pick<ICardDisplay, 'category' | 'image'>;
+
 export type TCardPreviewAction = 'buy' | 'remove' | 'none';
 
-/** Данные модалки с подробной карточкой товара. */
+/** Данные модалки с подробной карточкой товара (`productId` — в конструкторе `CardPreview`). */
 export type ICardPreviewDisplay = ICardDisplay &
     Pick<IProduct, 'description'> & {
         buttonText: string;
@@ -60,10 +69,16 @@ export type ICardPreviewDisplay = ICardDisplay &
         buttonAction: TCardPreviewAction;
     };
 
-/** Данные строки товара в корзине. */
-export type ICardBasketDisplay = Pick<ICardDisplay, 'id' | 'title' | 'price'> & {
+/** Дополнительные поля превью (к `ICard` и `ICardCatalog`). */
+export type ICardPreview = Omit<ICardPreviewDisplay, keyof ICardDisplay>;
+
+/** Данные строки товара в корзине (`productId` — в конструкторе `CardBasket`). */
+export type ICardBasketDisplay = Pick<ICardDisplay, 'title' | 'price'> & {
     index: number;
 };
+
+/** Дополнительные поля строки корзины (к `ICard` из `Card`). */
+export type ICardBasket = Pick<ICardBasketDisplay, 'index'>;
 
 /** Общие поля форм для отображения валидации. */
 export type IFormDisplay = {

@@ -23,9 +23,7 @@ export class Contacts extends Form<IContactsFormDisplay> {
 
         this.container.addEventListener('submit', (event) => {
             event.preventDefault();
-            if (!this.submitButton.disabled) {
-                this.events.emit('contacts:submit');
-            }
+            this.events.emit('contacts:submit');
         });
     }
 
