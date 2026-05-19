@@ -50,7 +50,7 @@ export type ICardImage = {
     alt: string;
 };
 
-/** Данные для отображения карточки (строки для UI готовит презентер). Идентификатор — в конструкторе View (`productId`), не в `render()`. */
+/** Данные для отображения карточки (строки для UI готовит презентер). Идентификатор — в колбэке конструктора View, не в полях и не в `render()`. */
 export type ICardDisplay = Pick<IProduct, 'title' | 'category'> & {
     image: ICardImage;
     price: string;
@@ -59,20 +59,17 @@ export type ICardDisplay = Pick<IProduct, 'title' | 'category'> & {
 /** Дополнительные поля карточки каталога (к `ICard` из `Card`). */
 export type ICardCatalog = Pick<ICardDisplay, 'category' | 'image'>;
 
-export type TCardPreviewAction = 'buy' | 'remove' | 'none';
-
-/** Данные модалки с подробной карточкой товара (`productId` — в конструкторе `CardPreview`). */
+/** Данные модалки с подробной карточкой товара. */
 export type ICardPreviewDisplay = ICardDisplay &
     Pick<IProduct, 'description'> & {
         buttonText: string;
         buttonDisabled: boolean;
-        buttonAction: TCardPreviewAction;
     };
 
-/** Дополнительные поля превью (к `ICard` и `ICardCatalog`). */
+/** Дополнительные поля превью (к `ICard`; категория и изображение — через `ICardCatalog` в дженерике `Card`). */
 export type ICardPreview = Omit<ICardPreviewDisplay, keyof ICardDisplay>;
 
-/** Данные строки товара в корзине (`productId` — в конструкторе `CardBasket`). */
+/** Данные строки товара в корзине. */
 export type ICardBasketDisplay = Pick<ICardDisplay, 'title' | 'price'> & {
     index: number;
 };

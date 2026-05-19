@@ -1,30 +1,49 @@
-import { ICardCatalog, ICardPreview, TCardPreviewAction } from '../../types';
+import { categoryMap } from '../../utils/constants';
+import { ICardCatalog, ICardPreview } from '../../types';
 import { ensureElement } from '../../utils/utils';
-import { IEvents } from '../base/Events';
-import { CardCatalog } from './CardCatalog';
+import { Card } from './Card';
 
-export class CardPreview extends CardCatalog<ICardCatalog & ICardPreview> {
+export class CardPreview extends Card<ICardCatalog & ICardPreview> {
+    protected categoryElement: HTMLElement;
+    protected imageElement: HTMLImageElement;
     protected textElement: HTMLElement;
     protected buttonElement: HTMLButtonElement;
-    protected action: TCardPreviewAction = 'none';
 
-    constructor(container: HTMLElement, events: IEvents, productId: string) {
-        super(container, events, productId);
+    constructor(
+        container: HTMLElement,
+        onSelect: () => void,
+        onAction: () => void
+    ) {
+        super(container);
 
+        this.categoryElement = ensureElement<HTMLElement>('.card__category', container);
+        this.imageElement = ensureElement<HTMLImageElement>('.card__image', container);
         this.textElement = ensureElement<HTMLElement>('.card__text', container);
         this.buttonElement = ensureElement<HTMLButtonElement>('.card__button', container);
 
+        this.container.addEventListener('click', onSelect);
+
         this.buttonElement.addEventListener('click', (event) => {
             event.stopPropagation();
-
-            if (this.action === 'buy') {
-                this.events.emit('card:buy', { id: this.productId });
-            }
-
-            if (this.action === 'remove') {
-                this.events.emit('card:remove', { id: this.productId });
-            }
+            onAction();
         });
+    }
+
+    set category(value: string) {
+        this.categoryElement.textContent = value;
+
+        Object.values(categoryMap).forEach((className) => {
+            this.categoryElement.classList.remove(className);
+        });
+
+        const modifier = categoryMap[value as keyof typeof categoryMap];
+        if (modifier) {
+            this.categoryElement.classList.add(modifier);
+        }
+    }
+
+    set image(value: { src: string; alt: string }) {
+        this.setImage(this.imageElement, value.src, value.alt);
     }
 
     set description(value: string) {
@@ -37,9 +56,5 @@ export class CardPreview extends CardCatalog<ICardCatalog & ICardPreview> {
 
     set buttonDisabled(value: boolean) {
         this.buttonElement.disabled = value;
-    }
-
-    set buttonAction(value: TCardPreviewAction) {
-        this.action = value;
     }
 }

@@ -3,7 +3,8 @@ import { Component } from '../base/Component';
 import { IEvents } from '../base/Events';
 
 export interface IModal {
-    content: HTMLElement;
+    content?: HTMLElement;
+    isOpen: boolean;
 }
 
 export class Modal extends Component<IModal> {
@@ -31,13 +32,12 @@ export class Modal extends Component<IModal> {
         this.contentElement.replaceChildren(value);
     }
 
-    open(node: HTMLElement): void {
-        this.render({ content: node });
-        this.container.classList.add('modal_active');
-    }
-
-    close(): void {
-        this.container.classList.remove('modal_active');
-        this.contentElement.replaceChildren();
+    set isOpen(value: boolean) {
+        if (value) {
+            this.container.classList.add('modal_active');
+        } else {
+            this.container.classList.remove('modal_active');
+            this.contentElement.replaceChildren();
+        }
     }
 }
